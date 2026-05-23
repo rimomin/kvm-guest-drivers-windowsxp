@@ -17,7 +17,11 @@ Common PlatformTools definitions used by all projects:
   </PropertyGroup>
 
   <PropertyGroup>
-  <VisualStudioToolset>v141</VisualStudioToolset>
+    <VisualStudioToolset>v100</VisualStudioToolset>
+  </PropertyGroup>
+  <!--
+  <PropertyGroup>
+    <VisualStudioToolset>v141</VisualStudioToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(VisualStudioVersionMajor)'>='16'">
   <VisualStudioToolset>v142</VisualStudioToolset>
@@ -31,5 +35,6 @@ Common PlatformTools definitions used by all projects:
   <PropertyGroup Condition= "'$(PlatformToolset)'=='' OR '$(PlatformToolset)'=='AutoVSToolset'">
   <PlatformToolset>$(VisualStudioToolset)</PlatformToolset>
   </PropertyGroup>
+  -->
 
 </Project>

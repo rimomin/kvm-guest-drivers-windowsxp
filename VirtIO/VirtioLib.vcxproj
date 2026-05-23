@@ -1,29 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Win10 Release|Win32">
-      <Configuration>Win10 Release</Configuration>
+    <ProjectConfiguration Include="WinXP Release|Win32">
+      <Configuration>WinXP Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10 Release|x64">
-      <Configuration>Win10 Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10 Release|ARM64">
-      <Configuration>Win10 Release</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win11 Release|ARM64">
-      <Configuration>Win11 Release</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win11 Release|Win32">
-      <Configuration>Win11 Release</Configuration>
+    <ProjectConfiguration Include="WinXP Debug|Win32">
+      <Configuration>WinXP Debug</Configuration>
       <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win11 Release|x64">
-      <Configuration>Win11 Release</Configuration>
-      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
@@ -48,15 +32,8 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{01D87C47-437A-4A16-8FD9-33FA5C99339E}</ProjectGuid>
     <TemplateGuid>{0a049372-4c4d-4ea0-a64e-dc6ad88ceca1}</TemplateGuid>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
-    <Configuration>Win10 Release</Configuration>
+    <Configuration>WinXP Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">Win32</Platform>
-  </PropertyGroup>
-  <PropertyGroup Label="Globals">
-    <RootNamespace>VirtioLib_win8</RootNamespace>
-    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VisualStudioVersion)' == '11.0'">$(VCTargetsPath11)</VCTargetsPath>
-    <WindowsTargetPlatformVersion>$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Label="PropertySheets">
     <ConfigurationType>StaticLibrary</ConfigurationType>
@@ -68,29 +45,13 @@
   <PropertyGroup Label="Configuration" Condition="$(Configuration.EndsWith('Debug'))">
     <UseDebugLibraries>true</UseDebugLibraries>
   </PropertyGroup>
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Win10 Release|Win32'">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='WinXP Release|Win32'">
+    <TargetVersion>WindowsXP</TargetVersion>
+    <PlatformToolset>WindowsKernelModeDriver7.1</PlatformToolset>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|Win32'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Win10 Release|x64'">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|x64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Win10 Release|ARM64'">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|ARM64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WinXP Debug|Win32'" Label="Configuration">
+    <TargetVersion>WindowsXP</TargetVersion>
+    <PlatformToolset>WindowsKernelModeDriver7.1</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(MSBuildProjectDirectory)\..\build\Driver.Common.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -99,29 +60,13 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Release|Win32'">
-    <OutDir>objfre_win10_x86\i386\</OutDir>
-    <IntDir>objfre_win10_x86\i386\</IntDir>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WinXP Release|Win32'">
+    <OutDir>objfre_winXP_x86\i386\</OutDir>
+    <IntDir>objfre_winXP_x86\i386\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|Win32'">
-    <OutDir>objfre_win11_x86\i386\</OutDir>
-    <IntDir>objfre_win11_x86\i386\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Release|x64'">
-    <OutDir>objfre_win10_amd64\amd64\</OutDir>
-    <IntDir>objfre_win10_amd64\amd64\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|x64'">
-    <OutDir>objfre_win11_amd64\amd64\</OutDir>
-    <IntDir>objfre_win11_amd64\amd64\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Release|ARM64'">
-    <OutDir>objfre_win10_arm64\arm64\</OutDir>
-    <IntDir>objfre_win10_arm64\arm64\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|ARM64'">
-    <OutDir>objfre_win11_arm64\arm64\</OutDir>
-    <IntDir>objfre_win11_arm64\arm64\</IntDir>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WinXP Debug|Win32'">
+    <OutDir>objchk_winXP_x86\i386\</OutDir>
+    <IntDir>objchk_winXP_x86\i386\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

@@ -1,46 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Win10 Release|Win32">
-      <Configuration>Win10 Release</Configuration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10 Release|x64">
-      <Configuration>Win10 Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10 Release|ARM64">
-      <Configuration>Win10 Release</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win11 Release|ARM64">
-      <Configuration>Win11 Release</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win11 Release|Win32">
-      <Configuration>Win11 Release</Configuration>
+    <ProjectConfiguration Include="WinXP Release|Win32">
+      <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win11 Release|x64">
-      <Configuration>Win11 Release</Configuration>
-      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1530C86E-90C0-4270-B3A2-0FB90152CA48}</ProjectGuid>
     <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
-    <Configuration>Win10 Release</Configuration>
+    <Configuration>WinXP Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">Win32</Platform>
-    <SignMode>Off</SignMode>
-  </PropertyGroup>
-  <PropertyGroup Label="Globals">
-    <RootNamespace>vioscsi</RootNamespace>
-    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VisualStudioVersion)' == '11.0'">$(VCTargetsPath11)</VCTargetsPath>
   </PropertyGroup>
   <PropertyGroup Label="PropertySheets">
-    <PlatformToolset>WindowsKernelModeDriver8.1</PlatformToolset>
+    <PlatformToolset>WindowsKernelModeDriver7.1</PlatformToolset>
     <ConfigurationType>Driver</ConfigurationType>
     <DriverType>Miniport</DriverType>
   </PropertyGroup>
@@ -48,29 +25,13 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <ALLOW_DATE_TIME>1</ALLOW_DATE_TIME>
   </PropertyGroup>
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Win10 Release|Win32'">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='WinXP Release|Win32'">
+    <TargetVersion>WindowsXP</TargetVersion>
+    <PlatformToolset>WindowsKernelModeDriver7.1</PlatformToolset>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|Win32'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Win10 Release|x64'">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|x64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Win10 Release|ARM64'">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|ARM64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WinXP Debug|Win32'" Label="Configuration">
+    <TargetVersion>WindowsXP</TargetVersion>
+    <PlatformToolset>WindowsKernelModeDriver7.1</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(MSBuildProjectDirectory)\vioscsi.props" />
   <Import Project="$(MSBuildProjectDirectory)\..\build\Driver.Common.props" />
@@ -85,29 +46,13 @@
     <TargetName>vioscsi</TargetName>
     <TargetExt>.sys</TargetExt>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Release|Win32'">
-    <OutDir>objfre_win10_x86\i386\</OutDir>
-    <IntDir>objfre_win10_x86\i386\</IntDir>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WinXP Release|Win32'">
+    <OutDir>objfre_winxp_x86\i386\</OutDir>
+    <IntDir>objfre_winxp_x86\i386\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|Win32'">
-    <OutDir>objfre_win11_x86\i386\</OutDir>
-    <IntDir>objfre_win11_x86\i386\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Release|x64'">
-    <OutDir>objfre_win10_amd64\amd64\</OutDir>
-    <IntDir>objfre_win10_amd64\amd64\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|x64'">
-    <OutDir>objfre_win11_amd64\amd64\</OutDir>
-    <IntDir>objfre_win11_amd64\amd64\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Release|ARM64'">
-    <OutDir>objfre_win10_arm64\arm64\</OutDir>
-    <IntDir>objfre_win10_arm64\arm64\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11 Release|ARM64'">
-    <OutDir>objfre_win11_arm64\arm64\</OutDir>
-    <IntDir>objfre_win11_arm64\arm64\</IntDir>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WinXP Debug|Win32'">
+    <OutDir>objchk_winxp_x86\i386\</OutDir>
+    <IntDir>objchk_winxp_x86\i386\</IntDir>
   </PropertyGroup>
   <PropertyGroup>
     <CustomBuildAfterTargets>dvl</CustomBuildAfterTargets>
@@ -165,28 +110,12 @@
       <Outputs>$(ProjectDir)Install\$(TargetOS)\$(TargetArch)\$(TargetName).DVL.XML;$(ProjectDir)Install\$(TargetOS)\$(TargetArch)\$(TargetName).DVL-win10.XML</Outputs>
     </CustomBuildStep>
     <ClCompile>
-      <WppEnabled Condition="'$(Configuration)|$(Platform)'=='Win10 Release|Win32'">true</WppEnabled>
-      <WppEnabled Condition="'$(Configuration)|$(Platform)'=='Win11 Release|Win32'">true</WppEnabled>
-      <WppGenerateUsingTemplateFile Condition="'$(Configuration)|$(Platform)'=='Win10 Release|Win32'">{km-StorDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
-      <WppGenerateUsingTemplateFile Condition="'$(Configuration)|$(Platform)'=='Win11 Release|Win32'">{km-StorDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
-      <WppScanConfigurationData Condition="'$(Configuration)|$(Platform)'=='Win10 Release|Win32'">trace.h</WppScanConfigurationData>
-      <WppScanConfigurationData Condition="'$(Configuration)|$(Platform)'=='Win11 Release|Win32'">trace.h</WppScanConfigurationData>
-    </ClCompile>
-    <ClCompile>
-      <WppEnabled Condition="'$(Configuration)|$(Platform)'=='Win10 Release|x64'">true</WppEnabled>
-      <WppEnabled Condition="'$(Configuration)|$(Platform)'=='Win11 Release|x64'">true</WppEnabled>
-      <WppGenerateUsingTemplateFile Condition="'$(Configuration)|$(Platform)'=='Win10 Release|x64'">{km-StorDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
-      <WppGenerateUsingTemplateFile Condition="'$(Configuration)|$(Platform)'=='Win11 Release|x64'">{km-StorDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
-      <WppScanConfigurationData Condition="'$(Configuration)|$(Platform)'=='Win10 Release|x64'">trace.h</WppScanConfigurationData>
-      <WppScanConfigurationData Condition="'$(Configuration)|$(Platform)'=='Win11 Release|x64'">trace.h</WppScanConfigurationData>
-    </ClCompile>
-    <ClCompile>
-      <WppEnabled Condition="'$(Configuration)|$(Platform)'=='Win10 Release|ARM64'">true</WppEnabled>
-      <WppEnabled Condition="'$(Configuration)|$(Platform)'=='Win11 Release|ARM64'">true</WppEnabled>
-      <WppGenerateUsingTemplateFile Condition="'$(Configuration)|$(Platform)'=='Win10 Release|ARM64'">{km-StorDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
-      <WppGenerateUsingTemplateFile Condition="'$(Configuration)|$(Platform)'=='Win11 Release|ARM64'">{km-StorDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
-      <WppScanConfigurationData Condition="'$(Configuration)|$(Platform)'=='Win10 Release|ARM64'">trace.h</WppScanConfigurationData>
-      <WppScanConfigurationData Condition="'$(Configuration)|$(Platform)'=='Win11 Release|ARM64'">trace.h</WppScanConfigurationData>
+      <WppEnabled Condition="'$(Configuration)|$(Platform)'=='WinXP Release|Win32'">true</WppEnabled>
+      <WppEnabled Condition="'$(Configuration)|$(Platform)'=='WinXP Debug|Win32'">true</WppEnabled>
+      <WppGenerateUsingTemplateFile Condition="'$(Configuration)|$(Platform)'=='WinXP Release|Win32'">{km-StorDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
+      <WppGenerateUsingTemplateFile Condition="'$(Configuration)|$(Platform)'=='WinXP Debug|Win32'">{km-StorDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
+      <WppScanConfigurationData Condition="'$(Configuration)|$(Platform)'=='WinXP Release|Win32'">trace.h</WppScanConfigurationData>
+      <WppScanConfigurationData Condition="'$(Configuration)|$(Platform)'=='WinXP Debug|Win32'">trace.h</WppScanConfigurationData>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
