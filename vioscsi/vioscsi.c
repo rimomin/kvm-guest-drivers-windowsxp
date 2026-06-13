@@ -368,7 +368,6 @@ ENTER_FN();
     max_cpus = KeQueryMaximumProcessorCount();
 #endif
     adaptExt->num_queues = adaptExt->scsi_config.num_queues;
-
     if (adaptExt->dump_mode || !adaptExt->msix_enabled)
     {
         adaptExt->num_queues = 1;
@@ -396,6 +395,11 @@ ENTER_FN();
      * only allocates when called for the first time so we need to always use this upper bound.
      */
     max_queues = min(max_cpus, adaptExt->scsi_config.num_queues);
+    if (adaptExt->num_queues > max_queues) {
+	RhelDbgPrint(TRACE_LEVEL_WARNING, ("Multiqueue can only use at most one queue per cpu."));
+        adaptExt->num_queues = max_queues;
+    }
+    
 
     /* This function is our only chance to allocate memory for the driver; allocations are not
      * possible later on. Even worse, the only allocation mechanism guaranteed to work in all
@@ -650,9 +654,11 @@ ENTER_FN();
         for (index = VIRTIO_SCSI_CONTROL_QUEUE; index < adaptExt->num_queues + VIRTIO_SCSI_REQUEST_QUEUE_0; ++index) {
               if ((adaptExt->num_queues > 1) &&
                   (index >= VIRTIO_SCSI_REQUEST_QUEUE_0)) {
+#ifdef USE_CPU_TO_VQ_MAP
                   if (!CHECKFLAG(adaptExt->perfFlags, STOR_PERF_ADV_CONFIG_LOCALITY)) {
                       adaptExt->cpu_to_vq_map[index - VIRTIO_SCSI_REQUEST_QUEUE_0] = (UCHAR)(index - VIRTIO_SCSI_REQUEST_QUEUE_0);
                   }
+#endif // USE_CPU_TO_VQ_MAP
 #if (NTDDI_VERSION > NTDDI_WIN7)
                   status = StorPortInitializeSListHead(DeviceExtension, &adaptExt->srb_list[index - VIRTIO_SCSI_REQUEST_QUEUE_0]); 
                   if (status != STOR_STATUS_SUCCESS) {
@@ -740,6 +746,7 @@ ENTER_FN();
                     adaptExt->perfFlags = 0;
                     RhelDbgPrint(TRACE_LEVEL_ERROR, ("%s StorPortInitializePerfOpts FALSE status = 0x%x\n", __FUNCTION__, status));
                 }
+#ifdef USE_CPU_TO_VQ_MAP
                 else if ((adaptExt->pmsg_affinity != NULL) && CHECKFLAG(perfData.Flags, STOR_PERF_ADV_CONFIG_LOCALITY)){
                     UCHAR msg = 0;
                     PGROUP_AFFINITY ga;
@@ -755,6 +762,7 @@ ENTER_FN();
                         }
                     }
                 }
+#endif // USE_CPU_TO_VQ_MAP
             }
             else {
                 RhelDbgPrint(TRACE_LEVEL_INFORMATION, ("%s StorPortInitializePerfOpts TRUE status = 0x%x\n", __FUNCTION__, status));
@@ -807,8 +815,11 @@ EXIT_FN();
 }
 
 VOID
-//FORCEINLINE
-HandleResponse(PVOID DeviceExtension, PVirtIOSCSICmd cmd) {
+HandleResponse(
+    IN PVOID DeviceExtension,
+    IN PVirtIOSCSICmd cmd
+)
+{
     PSRB_TYPE Srb = (PSRB_TYPE)(cmd->srb);
     PSRB_EXTENSION srbExt = SRB_EXTENSION(Srb);
     VirtIOSCSICmdResp *resp = &cmd->resp.cmd;
@@ -1272,22 +1283,36 @@ ProcessQueue(
     ULONG               msg = MessageID - 3;
     STOR_LOCK_HANDLE    queueLock = { 0 };
     struct virtqueue    *vq;
+    BOOLEAN             handleResponseInline;
+#ifdef USE_WORK_ITEM
 #if (NTDDI_VERSION > NTDDI_WIN7)
     UCHAR               cnt = 0;
 #endif
+#endif
     adaptExt = (PADAPTER_EXTENSION)DeviceExtension;
+    LIST_ENTRY          complete_list;
+    PSRB_TYPE           Srb = NULL;
+    PSRB_EXTENSION      srbExt = NULL;
 ENTER_FN();
-
+#ifdef USE_WORK_ITEM
+    handleResponseInline = (adaptExt->num_queues == 1);
+#else
+    handleResponseInline = TRUE;
+#endif
     vq = adaptExt->vq[VIRTIO_SCSI_REQUEST_QUEUE_0 + msg];
+    InitializeListHead(&complete_list);
 
     VioScsiVQLock(DeviceExtension, MessageID, &queueLock, isr);
 
-    virtqueue_disable_cb(vq);
     do {
+        virtqueue_disable_cb(vq);
         while ((cmd = (PVirtIOSCSICmd)virtqueue_get_buf(vq, &len)) != NULL) {
-            if (adaptExt->num_queues == 1) {
-                HandleResponse(DeviceExtension, cmd);
+            if (handleResponseInline) {
+                Srb = (PSRB_TYPE)(cmd->srb);
+                srbExt = SRB_EXTENSION(Srb);
+                InsertTailList(&complete_list, &srbExt->process_list_entry);
             }
+#ifdef USE_WORK_ITEM
             else {
 #if (NTDDI_VERSION > NTDDI_WIN7)
                 PSRB_TYPE Srb = (PSRB_TYPE)(cmd->srb);
@@ -1306,11 +1331,18 @@ ENTER_FN();
                 NT_ASSERT(0);
 #endif
             }
+#endif
         }
     } while (!virtqueue_enable_cb(vq));
 
     VioScsiVQUnlock(DeviceExtension, MessageID, &queueLock, isr);
 
+    while (!IsListEmpty(&complete_list)) {
+        srbExt = (PSRB_EXTENSION)RemoveHeadList(&complete_list);
+        HandleResponse(DeviceExtension, &srbExt->cmd);
+    }
+
+#ifdef USE_WORK_ITEM
 #if (NTDDI_VERSION > NTDDI_WIN7)
     if (cnt) {
        ULONG status = STOR_STATUS_SUCCESS;
@@ -1327,6 +1359,7 @@ ENTER_FN();
 //FIXME   VioScsiWorkItemCallback
        }
     }
+#endif
 #endif
 EXIT_FN();
 }
@@ -1675,15 +1708,29 @@ ENTER_FN();
 EXIT_FN();
 }
 
-void CopyWMIString(void* _pDest, const void* _pSrc, size_t _maxlength)
+void CopyUnicodeString(void* _pDest, const void* _pSrc, size_t _maxlength)
 {
      PUSHORT _pDestTemp = _pDest;
      USHORT  _length = _maxlength - sizeof(USHORT);
-                                                                                                                                                 \
      *_pDestTemp++ = _length;
-                                                                                                                                                 \
      _length = (USHORT)min(wcslen(_pSrc)*sizeof(WCHAR), _length);
      memcpy(_pDestTemp, _pSrc, _length);
+}
+
+void CopyAnsiToUnicodeString(void* _pDest, const void* _pSrc, size_t _maxlength)
+{
+    PUSHORT _pDestTemp = _pDest;
+    PWCHAR  dst;
+    PCHAR   src = (PCHAR)_pSrc;
+    USHORT  _length = _maxlength - sizeof(USHORT);
+    *_pDestTemp++ = _length;
+    dst = (PWCHAR)_pDestTemp;
+    _length = (USHORT)min(strlen((const char*)_pSrc) * sizeof(WCHAR), _length);
+    _length /= sizeof(WCHAR);
+    while (_length) {
+        *dst++ = *src++;
+        --_length;
+    };
 }
 
 BOOLEAN
@@ -1740,17 +1787,22 @@ ENTER_FN();
             pOutBfr->HBAStatus = HBA_STATUS_OK;
             pOutBfr->NumberOfPorts = 1;
             pOutBfr->VendorSpecificID = VENDORID | (PRODUCTID << 16);
-            CopyWMIString(pOutBfr->Manufacturer, MANUFACTURER, sizeof(pOutBfr->Manufacturer));
-//FIXME
-//			CopyWMIString(pOutBfr->SerialNumber, adaptExt->ser_num ? adaptExt->ser_num : SERIALNUMBER, sizeof(pOutBfr->SerialNumber));
-			CopyWMIString(pOutBfr->SerialNumber, SERIALNUMBER, sizeof(pOutBfr->SerialNumber));
-            CopyWMIString(pOutBfr->Model, MODEL, sizeof(pOutBfr->Model));
-            CopyWMIString(pOutBfr->ModelDescription, MODELDESCRIPTION, sizeof(pOutBfr->ModelDescription));
-            CopyWMIString(pOutBfr->FirmwareVersion, FIRMWAREVERSION, sizeof(pOutBfr->FirmwareVersion));
-            CopyWMIString(pOutBfr->DriverName, DRIVERNAME, sizeof(pOutBfr->DriverName));
-            CopyWMIString(pOutBfr->HBASymbolicName, HBASYMBOLICNAME, sizeof(pOutBfr->HBASymbolicName));
-            CopyWMIString(pOutBfr->RedundantFirmwareVersion, FIRMWAREVERSION, sizeof(pOutBfr->RedundantFirmwareVersion));
-            CopyWMIString(pOutBfr->MfgDomain, MFRDOMAIN, sizeof(pOutBfr->MfgDomain));
+            CopyUnicodeString(pOutBfr->Manufacturer, MANUFACTURER, sizeof(pOutBfr->Manufacturer));
+            if (adaptExt->ser_num)
+            {
+                CopyAnsiToUnicodeString(pOutBfr->SerialNumber, adaptExt->ser_num, sizeof(pOutBfr->SerialNumber));
+            }
+            else
+            {
+                CopyUnicodeString(pOutBfr->SerialNumber, SERIALNUMBER, sizeof(pOutBfr->SerialNumber));
+            }
+            CopyUnicodeString(pOutBfr->Model, MODEL, sizeof(pOutBfr->Model));
+            CopyUnicodeString(pOutBfr->ModelDescription, MODELDESCRIPTION, sizeof(pOutBfr->ModelDescription));
+            CopyUnicodeString(pOutBfr->FirmwareVersion, FIRMWAREVERSION, sizeof(pOutBfr->FirmwareVersion));
+            CopyUnicodeString(pOutBfr->DriverName, DRIVERNAME, sizeof(pOutBfr->DriverName));
+            CopyUnicodeString(pOutBfr->HBASymbolicName, HBASYMBOLICNAME, sizeof(pOutBfr->HBASymbolicName));
+            CopyUnicodeString(pOutBfr->RedundantFirmwareVersion, FIRMWAREVERSION, sizeof(pOutBfr->RedundantFirmwareVersion));
+            CopyUnicodeString(pOutBfr->MfgDomain, MFRDOMAIN, sizeof(pOutBfr->MfgDomain));
 
             *InstanceLengthArray = size;
             status = SRB_STATUS_SUCCESS;
@@ -2066,6 +2118,7 @@ ENTER_FN();
 EXIT_FN();
 }
 
+#ifdef USE_WORK_ITEM
 #if (NTDDI_VERSION > NTDDI_WIN7)
 VOID
 VioScsiWorkItemCallback(
@@ -2129,4 +2182,5 @@ ENTER_FN();
     }
 EXIT_FN();
 }
+#endif
 #endif

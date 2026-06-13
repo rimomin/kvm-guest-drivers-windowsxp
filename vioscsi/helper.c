@@ -44,12 +44,29 @@ ENTER_FN();
     SET_VA_PA();
 
     if (adaptExt->num_queues > 1) {
+#ifdef USE_CPU_TO_VQ_MAP
         QueueNumber = adaptExt->cpu_to_vq_map[srbExt->cpu] + VIRTIO_SCSI_REQUEST_QUEUE_0;
+        MessageId = QueueNumber + 1;
+#else // USE_CPU_TO_VQ_MAP
+        STARTIO_PERFORMANCE_PARAMETERS param;
+        param.Size = sizeof(STARTIO_PERFORMANCE_PARAMETERS);
+        status = StorPortGetStartIoPerfParams(DeviceExtension, (PSCSI_REQUEST_BLOCK)Srb, &param);
+        if (status == STOR_STATUS_SUCCESS && param.MessageNumber != 0) {
+            MessageId = param.MessageNumber;
+            QueueNumber = MessageId - 1;
+        }
+        else {
+            RhelDbgPrint(TRACE_LEVEL_FATAL, ("srb %p cpu %d status 0x%x.\n", Srb, srbExt->cpu, status));
+            QueueNumber = VIRTIO_SCSI_REQUEST_QUEUE_0;
+            MessageId = 3;
+        }
+#endif // USE_CPU_TO_VQ_MAP
     }
     else {
         QueueNumber = VIRTIO_SCSI_REQUEST_QUEUE_0;
+        MessageId = 3;
     }
-    MessageId = QueueNumber + 1;
+
     VioScsiVQLock(DeviceExtension, MessageId, &LockHandle, FALSE);
     if (virtqueue_add_buf(adaptExt->vq[QueueNumber],
                      &srbExt->sg[0],
@@ -59,37 +76,26 @@ ENTER_FN();
         notify = virtqueue_kick_prepare(adaptExt->vq[QueueNumber]);
     }
     else {
-        RhelDbgPrint(TRACE_LEVEL_ERROR, ("%s Can not add packet to queue.\n", __FUNCTION__));
+        RhelDbgPrint(TRACE_LEVEL_FATAL, ("%s Can not add packet to queue.\n", __FUNCTION__));
 //FIXME
     }
+#ifndef USE_WORK_ITEM
+    if (CHECKFLAG(adaptExt->perfFlags, STOR_PERF_OPTIMIZE_FOR_COMPLETION_DURING_STARTIO)) {
+        ProcessQueue(DeviceExtension, MessageId, TRUE);
+    }
+#endif
     VioScsiVQUnlock(DeviceExtension, MessageId, &LockHandle, FALSE);
     if (notify) {
         virtqueue_notify(adaptExt->vq[QueueNumber]);
     }
+#ifdef USE_WORK_ITEM
 #if (NTDDI_VERSION > NTDDI_WIN7)
     if (adaptExt->num_queues > 1) {
         if (CHECKFLAG(adaptExt->perfFlags, STOR_PERF_OPTIMIZE_FOR_COMPLETION_DURING_STARTIO)) {
-            ULONG msg = MessageId - 3;
-            PSTOR_SLIST_ENTRY   listEntryRev, listEntry;
-            status = StorPortInterlockedFlushSList(DeviceExtension, &adaptExt->srb_list[msg], &listEntryRev);
-            if ((status == STOR_STATUS_SUCCESS) && (listEntryRev != NULL)) {
-                listEntry = listEntryRev;
-                while(listEntry)
-                {
-                    PVirtIOSCSICmd  cmd = NULL;
-                    PSTOR_SLIST_ENTRY next = listEntry->Next;
-                    srbExt = CONTAINING_RECORD(listEntry,
-                                SRB_EXTENSION, list_entry);
-
-                    ASSERT(srExt);
-                    cmd = (PVirtIOSCSICmd)srbExt->priv;
-                    ASSERT(cmd);
-                    HandleResponse(DeviceExtension, cmd);
-                    listEntry = next;
-                }
-            }
+            ProcessQueue(DeviceExtension, MessageId, FALSE);
         }
     }
+#endif
 #endif
 EXIT_FN();
     return result;
@@ -424,30 +430,17 @@ VioScsiVQLock(
 ENTER_FN();
     adaptExt = (PADAPTER_EXTENSION)DeviceExtension;
 
-    if (!adaptExt->msix_enabled) {
-        if (!isr) {
-            StorPortAcquireSpinLock(DeviceExtension, InterruptLock, NULL, LockHandle);
-        }
-    }
-    else {
-        if (adaptExt->num_queues == 1) {
-            if (!isr) {
-                ULONG oldIrql = 0;
-                StorPortAcquireMSISpinLock(DeviceExtension, (adaptExt->msix_one_vector ? 0 : MessageID), &oldIrql);
-                LockHandle->Context.OldIrql = (KIRQL)oldIrql;
+    if (!isr) {
+        if (adaptExt->msix_enabled) {
+            if (!CHECKFLAG(adaptExt->perfFlags, STOR_PERF_ADV_CONFIG_LOCALITY)) {
+                // Queue numbers start at 0, message ids at 1.
+                NT_ASSERT(MessageID > VIRTIO_SCSI_REQUEST_QUEUE_0);
+                NT_ASSERT(MessageID <= VIRTIO_SCSI_REQUEST_QUEUE_0 + adaptExt->num_queues);
+                StorPortAcquireSpinLock(DeviceExtension, DpcLock, &adaptExt->dpc[MessageID - VIRTIO_SCSI_REQUEST_QUEUE_0 - 1], LockHandle);
             }
         }
         else {
-            NT_ASSERT(MessageID > VIRTIO_SCSI_REQUEST_QUEUE_0);
-            NT_ASSERT(MessageID <= VIRTIO_SCSI_REQUEST_QUEUE_0 + adaptExt->num_queues);
-            if (CHECKFLAG(adaptExt->perfFlags, STOR_PERF_CONCURRENT_CHANNELS)) {
-                if (CHECKFLAG(adaptExt->perfFlags, STOR_PERF_ADV_CONFIG_LOCALITY)) {
-                    StorPortAcquireSpinLock(DeviceExtension, StartIoLock, &adaptExt->dpc[MessageID - VIRTIO_SCSI_REQUEST_QUEUE_0 - 1], LockHandle);
-                }
-                else {
-                    RhelDbgPrint(TRACE_LEVEL_FATAL, ("%s STOR_PERF_CONCURRENT_CHANNELS yes, STOR_PERF_ADV_CONFIG_LOCALITY no\n", __FUNCTION__));
-                }
-            }
+            StorPortAcquireSpinLock(DeviceExtension, InterruptLock, NULL, LockHandle);
         }
     }
 
@@ -467,28 +460,9 @@ VioScsiVQUnlock(
 ENTER_FN();
     adaptExt = (PADAPTER_EXTENSION)DeviceExtension;
 
-    if (!adaptExt->msix_enabled) {
-        if (!isr) {
+    if (!isr) {
+        if (!adaptExt->msix_enabled || !CHECKFLAG(adaptExt->perfFlags, STOR_PERF_ADV_CONFIG_LOCALITY)) {
             StorPortReleaseSpinLock(DeviceExtension, LockHandle);
-        }
-    }
-    else {
-        if (adaptExt->num_queues == 1) {
-            if (!isr) {
-                StorPortReleaseMSISpinLock(DeviceExtension, (adaptExt->msix_one_vector ? 0 : MessageID), LockHandle->Context.OldIrql);
-            }
-        }
-        else {
-            NT_ASSERT(MessageID > VIRTIO_SCSI_REQUEST_QUEUE_0);
-            NT_ASSERT(MessageID <= VIRTIO_SCSI_REQUEST_QUEUE_0 + adaptExt->num_queues);
-            if (CHECKFLAG(adaptExt->perfFlags, STOR_PERF_CONCURRENT_CHANNELS)) {
-                if (CHECKFLAG(adaptExt->perfFlags, STOR_PERF_ADV_CONFIG_LOCALITY)) {
-                    StorPortReleaseSpinLock(DeviceExtension, LockHandle);
-                }
-                else {
-                    RhelDbgPrint(TRACE_LEVEL_FATAL, ("%s STOR_PERF_CONCURRENT_CHANNELS yes, STOR_PERF_ADV_CONFIG_LOCALITY no\n", __FUNCTION__));
-                }
-            }
         }
     }
 
