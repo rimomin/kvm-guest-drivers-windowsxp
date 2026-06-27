@@ -363,9 +363,15 @@ ENTER_FN();
 #if (NTDDI_VERSION >= NTDDI_WIN7)
     num_cpus = KeQueryActiveProcessorCountEx(ALL_PROCESSOR_GROUPS);
     max_cpus = KeQueryMaximumProcessorCountEx(ALL_PROCESSOR_GROUPS);
-#else
+#elif (NTDDI_VERSION >= NTDDI_VISTA)
     num_cpus = KeQueryActiveProcessorCount(NULL);
     max_cpus = KeQueryMaximumProcessorCount();
+#elif  (NTDDI_VERSION >= NTDDI_WXP)
+	num_cpus = (ULONG)KeNumberProcessors;
+	max_cpus = num_cpus;
+#else
+	num_cpus = (ULONG)(*KeNumberProcessors);
+	max_cpus = num_cpus;
 #endif
     adaptExt->num_queues = adaptExt->scsi_config.num_queues;
     if (adaptExt->dump_mode || !adaptExt->msix_enabled)
