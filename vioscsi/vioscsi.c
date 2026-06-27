@@ -1279,7 +1279,7 @@ ProcessQueue(
 {
     PVirtIOSCSICmd      cmd;
     unsigned int        len;
-    PADAPTER_EXTENSION  adaptExt;
+    PADAPTER_EXTENSION  adaptExt = (PADAPTER_EXTENSION)DeviceExtension;
     ULONG               msg = MessageID - 3;
     STOR_LOCK_HANDLE    queueLock = { 0 };
     struct virtqueue    *vq;
@@ -1289,7 +1289,6 @@ ProcessQueue(
     UCHAR               cnt = 0;
 #endif
 #endif
-    adaptExt = (PADAPTER_EXTENSION)DeviceExtension;
     LIST_ENTRY          complete_list;
     PSRB_TYPE           Srb = NULL;
     PSRB_EXTENSION      srbExt = NULL;
